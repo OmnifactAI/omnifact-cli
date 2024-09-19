@@ -1,6 +1,7 @@
 # omnifact_cli/api.py
 
 import requests
+import json
 
 class OmnifactAPI:
     def __init__(self, api_key, base_url="https://connect.omnifact.ai"):
@@ -24,9 +25,15 @@ class OmnifactAPI:
         if name:
             data["name"] = name
         if metadata:
-            data["metadata"] = metadata
+            data["metadata"] = json.dumps(metadata)  # Convert metadata to JSON string
+        print(data)
         response = self.session.post(url, params=params, files=files, data=data)
-        response.raise_for_status()
+        try:
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            print(f"HTTP Error: {e}")
+            print(f"Server response: {response.text}")
+            raise
         return response.json()
 
     def get_document(self, document_id):

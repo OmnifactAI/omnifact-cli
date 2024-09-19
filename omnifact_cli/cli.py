@@ -67,11 +67,19 @@ def list_documents(api, space_id, offset, limit):
 @click.option('--space-id', required=True, help='ID of the space to upload the document to.')
 @click.option('--file', required=True, type=click.Path(exists=True), help='Path to the file to upload.')
 @click.option('--name', help='Name to give the document (optional).')
+@click.option('--metadata', help='Metadata for the document in JSON format (optional).')
 @click.pass_obj
-def upload_document(api, space_id, file, name):
+def upload_document(api, space_id, file, name, metadata):
     """Upload a document to a space."""
     try:
-        result = api.upload_document(space_id, file, name)
+        if metadata:
+            try:
+                import json
+                metadata = json.loads(metadata)
+            except json.JSONDecodeError:
+                click.echo("Error: Invalid JSON format for metadata", err=True)
+                return
+        result = api.upload_document(space_id, file, name, metadata)
         click.echo(f"Document uploaded successfully. ID: {result['id']}")
     except Exception as e:
         click.echo(f"Error: {str(e)}", err=True)
@@ -86,6 +94,9 @@ def get_document(api, document_id):
         click.echo(f"ID: {document['id']}")
         click.echo(f"Name: {document['name']}")
         click.echo(f"Status: {document['status']}")
+        if 'metadata' in document:
+            import json
+            click.echo(f"Metadata: {json.dumps(document['metadata'], indent=2)}")
     except Exception as e:
         click.echo(f"Error: {str(e)}", err=True)
 
