@@ -2,6 +2,8 @@
 
 Omnifact CLI is a command-line interface tool for managing documents in the Omnifact platform.
 
+The Omnifact API Spec can be found [here](https://connect.omnifact.ai/docs). For more information on Omnifact, please visit [omnifact.ai](https://omnifact.ai).
+
 ## Installation
 
 To install Omnifact CLI, follow these steps:
