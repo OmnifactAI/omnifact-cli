@@ -11,7 +11,7 @@ To install Omnifact CLI, follow these steps:
 1. Clone the repository:
 
 ```
-git clone https://gitlab.com/omnifact/omnifact-cli.git
+git clone https://github.com/OmnifactAI/omnifact-cli.git
 cd omnifact-cli
 ```
 
@@ -102,4 +102,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Support
 
-If you encounter any problems or have any questions, please open an issue on the GitLab repository.
+If you encounter any problems or have any questions, please open an issue on the GitHub repository.
