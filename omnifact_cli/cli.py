@@ -1,5 +1,6 @@
 # omnifact_cli/cli.py
 
+import sys
 import click
 from .api import OmnifactAPI
 from .config import get_api_key, set_api_key, set_connect_url, get_connect_url
@@ -10,9 +11,10 @@ def cli(ctx):
     """Omnifact CLI for managing documents."""
     api_key = get_api_key()
     connect_url = get_connect_url()
-    if not api_key:
-        click.echo("API key not set. Use 'omnifact-cli config set-api-key' to set it.")
-    else:
+    if ctx.invoked_subcommand not in ['config', 'help']:
+        if not api_key:
+            click.echo("Error: API key not set. Use 'omnifact-cli config set-api-key' to set it.", err=True)
+            sys.exit(1)
         ctx.obj = OmnifactAPI(api_key, connect_url)
 
 @cli.group()
@@ -61,7 +63,7 @@ def list_documents(api, space_id, offset, limit):
         for doc in documents['items']:
             click.echo(f"ID: {doc['id']}, Name: {doc['name']}")
     except Exception as e:
-        click.echo(f"Error: {str(e)}", err=True)
+        raise click.ClickException(str(e))
 
 @cli.command()
 @click.option('--space-id', required=True, help='ID of the space to upload the document to.')
@@ -82,7 +84,7 @@ def upload_document(api, space_id, file, name, metadata):
         result = api.upload_document(space_id, file, name, metadata)
         click.echo(f"Document uploaded successfully. ID: {result['id']}")
     except Exception as e:
-        click.echo(f"Error: {str(e)}", err=True)
+        raise click.ClickException(str(e))
 
 @cli.command()
 @click.argument('document_id')
@@ -98,7 +100,7 @@ def get_document(api, document_id):
             import json
             click.echo(f"Metadata: {json.dumps(document['metadata'], indent=2)}")
     except Exception as e:
-        click.echo(f"Error: {str(e)}", err=True)
+        raise click.ClickException(str(e))
 
 @cli.command()
 @click.argument('document_id')
@@ -109,7 +111,7 @@ def delete_document(api, document_id):
         api.delete_document(document_id)
         click.echo(f"Document {document_id} deleted successfully.")
     except Exception as e:
-        click.echo(f"Error: {str(e)}", err=True)
+        raise click.ClickException(str(e))
 
 if __name__ == '__main__':
     cli()

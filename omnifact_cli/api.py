@@ -26,7 +26,6 @@ class OmnifactAPI:
             data["name"] = name
         if metadata:
             data["metadata"] = json.dumps(metadata)  # Convert metadata to JSON string
-        print(data)
         response = self.session.post(url, params=params, files=files, data=data)
         try:
             response.raise_for_status()
