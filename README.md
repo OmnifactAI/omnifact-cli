@@ -42,6 +42,12 @@ Optionally, set your Connect URL:
 omnifact-cli config set-connect-url YOUR_CONNECT_URL
 ```
 
+You can also use environment variables to set the API key and Connect URL. This is useful for scripts or CI/CD pipelines, when using the CLI in a non-interactive way or when you want to avoid storing the API key in the configuration file.
+
+```bash
+OMNIFACT_API_KEY=your_api_key OMNIFACT_CONNECT_URL=https://your-connect-url.com omnifact-cli list-documents --space-id YOUR_SPACE_ID
+```
+
 ## Usage
 
 Here are some example commands:
