@@ -47,6 +47,24 @@ class OmnifactAPI:
         response.raise_for_status()
         return None
 
+    def update_document(self, document_id, name):
+        url = f"{self.base_url}/v1/documents/{document_id}"
+        data = {"name": name}
+        response = self.session.patch(url, json=data)
+        try:
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            print(f"HTTP Error: {e}")
+            print(f"Server response: {response.text}")
+            raise
+        return response.json()
+
+    def get_supported_file_types(self):
+        url = f"{self.base_url}/v1/documents/supported-file-types"
+        response = self.session.get(url)
+        response.raise_for_status()
+        return response.json()
+
     def upload_document_from_memory(self, space_id, file_data, file_name, content_type="text/plain", name=None, metadata=None):
         url = f"{self.base_url}/v1/documents"
         params = {"spaceId": space_id}

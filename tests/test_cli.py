@@ -82,6 +82,36 @@ def test_delete_document(mock_get_api_key, runner):
         assert "Document doc1 deleted successfully." in result.output
 
 @patch('omnifact_cli.cli.get_api_key')
+def test_rename_document(mock_get_api_key, runner):
+    mock_get_api_key.return_value = "test_api_key"
+
+    with patch('omnifact_cli.api.OmnifactAPI.update_document') as mock_update_document:
+        mock_update_document.return_value = {"id": "doc1", "name": "new-name.pdf", "status": "ready"}
+
+        result = runner.invoke(cli, ['rename-document', 'doc1', '--name', 'new-name.pdf'])
+
+        assert result.exit_code == 0
+        assert "Document renamed successfully to: new-name.pdf" in result.output
+        mock_update_document.assert_called_once_with('doc1', 'new-name.pdf')
+
+@patch('omnifact_cli.cli.get_api_key')
+def test_list_supported_types(mock_get_api_key, runner):
+    mock_get_api_key.return_value = "test_api_key"
+
+    with patch('omnifact_cli.api.OmnifactAPI.get_supported_file_types') as mock_get_types:
+        mock_get_types.return_value = [
+            {"mimeType": "application/pdf", "extensions": ["pdf"]},
+            {"mimeType": "text/plain", "extensions": ["txt", "text"]}
+        ]
+
+        result = runner.invoke(cli, ['list-supported-types'])
+
+        assert result.exit_code == 0
+        assert "Supported file types:" in result.output
+        assert "application/pdf: pdf" in result.output
+        assert "text/plain: txt, text" in result.output
+
+@patch('omnifact_cli.cli.get_api_key')
 def test_purge_with_confirmation(mock_get_api_key, runner):
     mock_get_api_key.return_value = "test_api_key"
 

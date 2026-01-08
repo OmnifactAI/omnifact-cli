@@ -97,3 +97,36 @@ def test_delete_document(api):
 
         assert result is None
         mock_delete.assert_called_once_with("https://connect.omnifact.ai/v1/documents/doc1")
+
+def test_update_document(api):
+    with patch('requests.Session.patch') as mock_patch:
+        mock_response = Mock()
+        mock_response.json.return_value = {"id": "doc1", "name": "renamed-document.pdf", "status": "ready"}
+        mock_response.raise_for_status.return_value = None
+        mock_patch.return_value = mock_response
+
+        result = api.update_document("doc1", "renamed-document.pdf")
+
+        assert result["id"] == "doc1"
+        assert result["name"] == "renamed-document.pdf"
+        mock_patch.assert_called_once_with(
+            "https://connect.omnifact.ai/v1/documents/doc1",
+            json={"name": "renamed-document.pdf"}
+        )
+
+def test_get_supported_file_types(api):
+    with patch('requests.Session.get') as mock_get:
+        mock_response = Mock()
+        mock_response.json.return_value = [
+            {"mimeType": "application/pdf", "extensions": ["pdf"]},
+            {"mimeType": "text/plain", "extensions": ["txt"]}
+        ]
+        mock_response.raise_for_status.return_value = None
+        mock_get.return_value = mock_response
+
+        result = api.get_supported_file_types()
+
+        assert len(result) == 2
+        assert result[0]["mimeType"] == "application/pdf"
+        assert result[1]["mimeType"] == "text/plain"
+        mock_get.assert_called_once_with("https://connect.omnifact.ai/v1/documents/supported-file-types")

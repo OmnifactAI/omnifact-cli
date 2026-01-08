@@ -72,13 +72,25 @@ omnifact-cli upload-document --space-id YOUR_SPACE_ID --file /path/to/your/docum
 omnifact-cli get-document DOCUMENT_ID
 ```
 
-4. Delete a document:
+4. Rename a document:
+
+```
+omnifact-cli rename-document DOCUMENT_ID --name "New Document Name.pdf"
+```
+
+5. Delete a document:
 
 ```
 omnifact-cli delete-document DOCUMENT_ID
 ```
 
-5. Purge all documents from a space:
+6. List supported file types:
+
+```
+omnifact-cli list-supported-types
+```
+
+7. Purge all documents from a space:
 
 ```
 omnifact-cli purge --space-id YOUR_SPACE_ID

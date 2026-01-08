@@ -124,6 +124,31 @@ def delete_document(api, document_id):
         raise click.ClickException(str(e))
 
 @cli.command()
+@click.argument('document_id')
+@click.option('--name', required=True, help='New name for the document.')
+@click.pass_obj
+def rename_document(api, document_id, name):
+    """Rename a specific document."""
+    try:
+        document = api.update_document(document_id, name)
+        click.echo(f"Document renamed successfully to: {document['name']}")
+    except Exception as e:
+        raise click.ClickException(str(e))
+
+@cli.command()
+@click.pass_obj
+def list_supported_types(api):
+    """List supported file types for document upload."""
+    try:
+        file_types = api.get_supported_file_types()
+        click.echo("Supported file types:")
+        for file_type in file_types:
+            extensions = ", ".join(file_type['extensions'])
+            click.echo(f"  {file_type['mimeType']}: {extensions}")
+    except Exception as e:
+        raise click.ClickException(str(e))
+
+@cli.command()
 @click.option('--space-id', required=True, help='ID of the space to purge documents from.')
 @click.pass_obj
 def purge(api, space_id):
