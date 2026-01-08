@@ -53,14 +53,24 @@ def get_connect_url_command():
 
 @cli.command()
 @click.option('--space-id', required=True, help='ID of the space to list documents from.')
-@click.option('--offset', default=0, help='Number of items to skip.')
-@click.option('--limit', default=20, help='Maximum number of items to return.')
 @click.pass_obj
-def list_documents(api, space_id, offset, limit):
-    """List documents in a space."""
+def list_documents(api, space_id):
+    """List all documents in a space."""
     try:
-        documents = api.get_documents(space_id, offset, limit)
-        for doc in documents['items']:
+        all_documents = []
+        offset = 0
+        limit = 100
+
+        # Fetch all documents in batches of 100
+        while True:
+            documents = api.get_documents(space_id, offset=offset, limit=limit)
+            all_documents.extend(documents['items'])
+            
+            if len(documents['items']) < limit:
+                break
+            
+            offset += limit
+        for doc in all_documents:
             click.echo(f"ID: {doc['id']}, Name: {doc['name']}")
     except Exception as e:
         raise click.ClickException(str(e))
@@ -110,6 +120,48 @@ def delete_document(api, document_id):
     try:
         api.delete_document(document_id)
         click.echo(f"Document {document_id} deleted successfully.")
+    except Exception as e:
+        raise click.ClickException(str(e))
+
+@cli.command()
+@click.option('--space-id', required=True, help='ID of the space to purge documents from.')
+@click.pass_obj
+def purge(api, space_id):
+    """Purge all documents from a space."""
+    try:
+        all_documents = []
+        offset = 0
+        limit = 100
+
+        # Fetch all documents in batches of 100
+        while True:
+            documents = api.get_documents(space_id, offset=offset, limit=limit)
+            all_documents.extend(documents['items'])
+            
+            if len(documents['items']) < limit:
+                break
+            
+            offset += limit
+
+        if not all_documents:
+            click.echo("No documents found in the specified space.")
+            return
+
+        # Display the documents to be deleted
+        click.echo("The following documents will be deleted:")
+        for doc in all_documents:
+            click.echo(f"ID: {doc['id']}, Name: {doc['name']}")
+        
+        # Ask for confirmation
+        if click.confirm("Are you sure you want to delete all these documents?"):
+            # Delete each document
+            for doc in all_documents:
+                api.delete_document(doc['id'])
+                click.echo(f"Deleted document: {doc['id']}")
+            
+            click.echo("All documents have been purged from the space.")
+        else:
+            click.echo("Operation cancelled.")
     except Exception as e:
         raise click.ClickException(str(e))
 

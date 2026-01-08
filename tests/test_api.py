@@ -46,6 +46,33 @@ def test_upload_document(api):
         assert result["name"] == "test.pdf"
         mock_post.assert_called_once()
 
+def test_upload_document_from_memory(api):
+    with patch('requests.Session.post') as mock_post:
+        mock_response = Mock()
+        mock_response.json.return_value = {"id": "new_doc", "name": "test.txt"}
+        mock_response.raise_for_status.return_value = None
+        mock_post.return_value = mock_response
+
+        file_data = b"Test file content"
+        result = api.upload_document_from_memory(
+            "space1",
+            file_data,
+            "test.txt",
+            content_type="text/plain",
+            name="Test Document",
+            metadata={"key": "value"}
+        )
+
+        assert result["id"] == "new_doc"
+        assert result["name"] == "test.txt"
+        mock_post.assert_called_once()
+
+        # Verify the call was made with correct parameters
+        call_args = mock_post.call_args
+        assert call_args[1]['params'] == {"spaceId": "space1"}
+        assert 'file' in call_args[1]['files']
+        assert call_args[1]['data']['name'] == "Test Document"
+
 def test_get_document(api):
     with patch('requests.Session.get') as mock_get:
         mock_response = Mock()

@@ -46,3 +46,21 @@ class OmnifactAPI:
         response = self.session.delete(url)
         response.raise_for_status()
         return None
+
+    def upload_document_from_memory(self, space_id, file_data, file_name, content_type="text/plain", name=None, metadata=None):
+        url = f"{self.base_url}/v1/documents"
+        params = {"spaceId": space_id}
+        files = {"file": (file_name, file_data, content_type)}
+        data = {}
+        if name:
+            data["name"] = name
+        if metadata:
+            data["metadata"] = json.dumps(metadata)  # Convert metadata to JSON string
+        response = self.session.post(url, params=params, files=files, data=data)
+        try:
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            print(f"HTTP Error: {e}")
+            print(f"Server response: {response.text}")
+            raise
+        return response.json()

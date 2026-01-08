@@ -78,6 +78,14 @@ omnifact-cli get-document DOCUMENT_ID
 omnifact-cli delete-document DOCUMENT_ID
 ```
 
+5. Purge all documents from a space:
+
+```
+omnifact-cli purge --space-id YOUR_SPACE_ID
+```
+
+Note: The purge command will ask for confirmation before deleting all documents.
+
 For more information on available commands, use:
 
 ```
