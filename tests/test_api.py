@@ -1,6 +1,7 @@
 # tests/test_api.py
 
 import pytest
+import requests
 from unittest.mock import patch, Mock
 from omnifact_cli.api import OmnifactAPI
 
@@ -148,3 +149,38 @@ def test_get_supported_file_types(api):
         assert result[0]["mimeType"] == "application/pdf"
         assert result[1]["mimeType"] == "text/plain"
         mock_get.assert_called_once_with("https://connect.omnifact.ai/v1/documents/supported-file-types")
+
+def test_upload_document_http_error(api):
+    """Test upload_document handles HTTP errors properly."""
+    with patch('requests.Session.post') as mock_post:
+        mock_response = Mock()
+        mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError("400 Bad Request")
+        mock_response.text = '{"error": "Invalid file"}'
+        mock_post.return_value = mock_response
+
+        with patch('builtins.open', Mock()):
+            with pytest.raises(requests.exceptions.HTTPError):
+                api.upload_document("space1", "test.pdf")
+
+def test_upload_document_from_memory_http_error(api):
+    """Test upload_document_from_memory handles HTTP errors properly."""
+    with patch('requests.Session.post') as mock_post:
+        mock_response = Mock()
+        mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError("400 Bad Request")
+        mock_response.text = '{"error": "Invalid file"}'
+        mock_post.return_value = mock_response
+
+        file_data = b"Test file content"
+        with pytest.raises(requests.exceptions.HTTPError):
+            api.upload_document_from_memory("space1", file_data, "test.txt")
+
+def test_update_document_http_error(api):
+    """Test update_document handles HTTP errors properly."""
+    with patch('requests.Session.patch') as mock_patch:
+        mock_response = Mock()
+        mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError("404 Not Found")
+        mock_response.text = '{"error": "Document not found"}'
+        mock_patch.return_value = mock_response
+
+        with pytest.raises(requests.exceptions.HTTPError):
+            api.update_document("doc1", "new-name.pdf")
