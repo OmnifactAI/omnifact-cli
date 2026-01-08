@@ -42,7 +42,7 @@ def test_list_documents(mock_get_api_key, runner):
 @patch('omnifact_cli.cli.get_api_key')
 def test_upload_document(mock_get_api_key, runner):
     mock_get_api_key.return_value = "test_api_key"
-    
+
     with patch('omnifact_cli.api.OmnifactAPI.upload_document') as mock_upload_document:
         mock_upload_document.return_value = {"id": "new_doc", "name": "test.pdf"}
 
@@ -54,6 +54,24 @@ def test_upload_document(mock_get_api_key, runner):
 
         assert result.exit_code == 0
         assert "Document uploaded successfully. ID: new_doc" in result.output
+
+@patch('omnifact_cli.cli.get_api_key')
+def test_upload_document_with_encoding(mock_get_api_key, runner):
+    mock_get_api_key.return_value = "test_api_key"
+
+    with patch('omnifact_cli.api.OmnifactAPI.upload_document') as mock_upload_document:
+        mock_upload_document.return_value = {"id": "new_doc", "name": "test.txt"}
+
+        with runner.isolated_filesystem():
+            with open('test.txt', 'wb') as f:
+                f.write(b'Test text content')
+
+            result = runner.invoke(cli, ['upload-document', '--space-id', 'space1', '--file', 'test.txt', '--encoding', 'windows-1252'])
+
+        assert result.exit_code == 0
+        assert "Document uploaded successfully. ID: new_doc" in result.output
+        # Verify the encoding parameter was passed to the API method
+        mock_upload_document.assert_called_once_with('space1', 'test.txt', None, None, 'windows-1252')
 
 @patch('omnifact_cli.cli.get_api_key')
 def test_get_document(mock_get_api_key, runner):

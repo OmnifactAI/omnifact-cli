@@ -46,6 +46,24 @@ def test_upload_document(api):
         assert result["name"] == "test.pdf"
         mock_post.assert_called_once()
 
+def test_upload_document_with_encoding(api):
+    with patch('requests.Session.post') as mock_post:
+        mock_response = Mock()
+        mock_response.json.return_value = {"id": "new_doc", "name": "test.txt"}
+        mock_response.raise_for_status.return_value = None
+        mock_post.return_value = mock_response
+
+        with patch('builtins.open', Mock()):
+            result = api.upload_document("space1", "test.txt", name="Test Document", encoding="windows-1252")
+
+        assert result["id"] == "new_doc"
+        assert result["name"] == "test.txt"
+
+        # Verify the encoding header was set
+        call_args = mock_post.call_args
+        assert call_args[1]['headers']['Content-Transfer-Encoding'] == "windows-1252"
+        mock_post.assert_called_once()
+
 def test_upload_document_from_memory(api):
     with patch('requests.Session.post') as mock_post:
         mock_response = Mock()

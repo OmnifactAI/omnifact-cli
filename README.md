@@ -64,6 +64,8 @@ omnifact-cli list-documents --space-id YOUR_SPACE_ID
 omnifact-cli upload-document --space-id YOUR_SPACE_ID --file /path/to/your/document.pdf
 # Optionally, you can set the name of the document and the metadata
 omnifact-cli upload-document --space-id YOUR_SPACE_ID --file /path/to/your/document.pdf --name "Document Name" --metadata '{"url": "https://example.com/docs/document.pdf"}'
+# For text files with specific encoding, you can specify the encoding
+omnifact-cli upload-document --space-id YOUR_SPACE_ID --file /path/to/your/document.txt --encoding windows-1252
 ```
 
 3. Get document details:

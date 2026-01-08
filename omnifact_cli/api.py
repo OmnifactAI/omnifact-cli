@@ -17,16 +17,19 @@ class OmnifactAPI:
         response.raise_for_status()
         return response.json()
 
-    def upload_document(self, space_id, file_path, name=None, metadata=None):
+    def upload_document(self, space_id, file_path, name=None, metadata=None, encoding=None):
         url = f"{self.base_url}/v1/documents"
         params = {"spaceId": space_id}
         files = {"file": open(file_path, "rb")}
         data = {}
+        headers = {}
         if name:
             data["name"] = name
         if metadata:
             data["metadata"] = json.dumps(metadata)  # Convert metadata to JSON string
-        response = self.session.post(url, params=params, files=files, data=data)
+        if encoding:
+            headers["Content-Transfer-Encoding"] = encoding
+        response = self.session.post(url, params=params, files=files, data=data, headers=headers)
         try:
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:
@@ -65,16 +68,19 @@ class OmnifactAPI:
         response.raise_for_status()
         return response.json()
 
-    def upload_document_from_memory(self, space_id, file_data, file_name, content_type="text/plain", name=None, metadata=None):
+    def upload_document_from_memory(self, space_id, file_data, file_name, content_type="text/plain", name=None, metadata=None, encoding=None):
         url = f"{self.base_url}/v1/documents"
         params = {"spaceId": space_id}
         files = {"file": (file_name, file_data, content_type)}
         data = {}
+        headers = {}
         if name:
             data["name"] = name
         if metadata:
             data["metadata"] = json.dumps(metadata)  # Convert metadata to JSON string
-        response = self.session.post(url, params=params, files=files, data=data)
+        if encoding:
+            headers["Content-Transfer-Encoding"] = encoding
+        response = self.session.post(url, params=params, files=files, data=data, headers=headers)
         try:
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:

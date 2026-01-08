@@ -80,8 +80,9 @@ def list_documents(api, space_id):
 @click.option('--file', required=True, type=click.Path(exists=True), help='Path to the file to upload.')
 @click.option('--name', help='Name to give the document (optional).')
 @click.option('--metadata', help='Metadata for the document in JSON format (optional).')
+@click.option('--encoding', help='File encoding (e.g., utf-8, windows-1252, ISO-8859-1). If not specified, encoding will be auto-detected.')
 @click.pass_obj
-def upload_document(api, space_id, file, name, metadata):
+def upload_document(api, space_id, file, name, metadata, encoding):
     """Upload a document to a space."""
     try:
         if metadata:
@@ -91,7 +92,7 @@ def upload_document(api, space_id, file, name, metadata):
             except json.JSONDecodeError:
                 click.echo("Error: Invalid JSON format for metadata", err=True)
                 return
-        result = api.upload_document(space_id, file, name, metadata)
+        result = api.upload_document(space_id, file, name, metadata, encoding)
         click.echo(f"Document uploaded successfully. ID: {result['id']}")
     except Exception as e:
         raise click.ClickException(str(e))
