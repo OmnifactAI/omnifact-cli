@@ -88,3 +88,40 @@ class OmnifactAPI:
             print(f"Server response: {response.text}")
             raise
         return response.json()
+
+    def chat(self, endpoint_id, message, history=None, stream=True):
+        """Send a chat message to an endpoint and get a response.
+
+        Args:
+            endpoint_id: The ID of the chat endpoint
+            message: The user's message
+            history: Optional list of previous messages for context
+                     (list of dicts with 'role' and 'content' keys)
+            stream: Whether to stream the response (default True)
+
+        Returns:
+            If stream=True, returns the response object for streaming iteration
+            If stream=False, returns the parsed JSON response
+        """
+        url = f"{self.base_url}/v1/endpoints/{endpoint_id}/chat"
+
+        # Build messages array
+        messages = []
+        if history:
+            messages.extend(history)
+        messages.append({"role": "user", "content": message})
+
+        payload = {"messages": messages, "streaming": stream}
+
+        response = self.session.post(url, json=payload, stream=stream)
+        try:
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            print(f"HTTP Error: {e}")
+            print(f"Server response: {response.text}")
+            raise
+
+        if stream:
+            return response
+        else:
+            return response.json()

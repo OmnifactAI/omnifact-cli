@@ -214,3 +214,106 @@ def test_purge_no_documents(mock_get_api_key, runner):
 
         assert result.exit_code == 0
         assert "No documents found in the specified space." in result.output
+
+
+@patch('omnifact_cli.cli.get_api_key')
+def test_chat_single_question(mock_get_api_key, runner):
+    """Test chat command in single-question mode."""
+    mock_get_api_key.return_value = "test_api_key"
+
+    with patch('omnifact_cli.api.OmnifactAPI.chat') as mock_chat:
+        mock_response = Mock()
+        # Simulate SSE streaming response
+        mock_response.iter_lines.return_value = [
+            b'event: assistant_write',
+            b'id: 1',
+            b'{"messageId": "msg1", "content": "Hello, "}',
+            b'event: assistant_write',
+            b'id: 2',
+            b'{"messageId": "msg1", "content": "how can I help?"}',
+            b'event: done',
+            b'id: 3',
+        ]
+        mock_chat.return_value = mock_response
+
+        result = runner.invoke(cli, ['chat', '--endpoint-id', 'endpoint1', 'Hi there'])
+
+        assert result.exit_code == 0
+        assert "Hello, how can I help?" in result.output
+        mock_chat.assert_called_once_with('endpoint1', 'Hi there', stream=True)
+
+
+@patch('omnifact_cli.cli.get_api_key')
+def test_chat_missing_message(mock_get_api_key, runner):
+    """Test chat command fails when message is missing in non-interactive mode."""
+    mock_get_api_key.return_value = "test_api_key"
+
+    result = runner.invoke(cli, ['chat', '--endpoint-id', 'endpoint1'])
+
+    assert result.exit_code != 0
+    assert "Message is required in non-interactive mode" in result.output
+
+
+@patch('omnifact_cli.cli.get_api_key')
+def test_chat_interactive_mode(mock_get_api_key, runner):
+    """Test chat command in interactive mode."""
+    mock_get_api_key.return_value = "test_api_key"
+
+    with patch('omnifact_cli.api.OmnifactAPI.chat') as mock_chat:
+        mock_response = Mock()
+        mock_response.iter_lines.return_value = [
+            b'event: assistant_write',
+            b'id: 1',
+            b'{"messageId": "msg1", "content": "Hello!"}',
+            b'event: done',
+            b'id: 2',
+        ]
+        mock_chat.return_value = mock_response
+
+        # Simulate user input: one message then exit
+        result = runner.invoke(cli, ['chat', '--endpoint-id', 'endpoint1', '-i'], input='Hello\nexit\n')
+
+        assert result.exit_code == 0
+        assert "Interactive chat started" in result.output
+        assert "Hello!" in result.output
+        assert "Goodbye!" in result.output
+
+
+@patch('omnifact_cli.cli.get_api_key')
+def test_chat_interactive_mode_with_history(mock_get_api_key, runner):
+    """Test that interactive mode maintains conversation history."""
+    mock_get_api_key.return_value = "test_api_key"
+
+    # Track history at each call
+    captured_histories = []
+
+    with patch('omnifact_cli.api.OmnifactAPI.chat') as mock_chat:
+        def create_mock_response(endpoint_id, message, history=None, stream=True):
+            # Capture a copy of history at call time
+            captured_histories.append(list(history) if history else [])
+            mock_response = Mock()
+            content = "First response" if len(captured_histories) == 1 else "Second response"
+            mock_response.iter_lines.return_value = iter([
+                b'event: assistant_write',
+                b'id: 1',
+                f'{{"messageId": "msg1", "content": "{content}"}}'.encode(),
+                b'event: done',
+                b'id: 2',
+            ])
+            return mock_response
+
+        mock_chat.side_effect = create_mock_response
+
+        # Send two messages then exit
+        result = runner.invoke(cli, ['chat', '--endpoint-id', 'endpoint1', '-i'], input='First\nSecond\nexit\n')
+
+        assert result.exit_code == 0
+        assert mock_chat.call_count == 2
+
+        # First call should have no history
+        assert captured_histories[0] == []
+
+        # Second call should have history from first exchange
+        assert len(captured_histories[1]) == 2
+        assert captured_histories[1][0] == {"role": "user", "content": "First"}
+        assert captured_histories[1][1] == {"role": "assistant", "content": "First response"}

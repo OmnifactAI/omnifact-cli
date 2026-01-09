@@ -191,5 +191,122 @@ def purge(api, space_id):
     except Exception as e:
         raise click.ClickException(str(e))
 
+def _process_stream_response(response):
+    """Process a streaming SSE response and yield content chunks.
+
+    The SSE format is:
+        event: <event_type>
+        id: <id>
+        <json_data>
+        (blank line)
+
+    Where json_data for assistant_write events is: {"messageId": "...", "content": "..."}
+    """
+    import json
+    current_event = None
+
+    for line in response.iter_lines():
+        if line:
+            line_str = line.decode('utf-8')
+
+            # Parse SSE event type
+            if line_str.startswith('event: '):
+                current_event = line_str[7:].strip()
+                continue
+
+            # Skip id lines
+            if line_str.startswith('id: '):
+                continue
+
+            # Skip data: prefix if present
+            if line_str.startswith('data: '):
+                line_str = line_str[6:]
+
+            # Only process content from assistant_write events
+            if current_event == 'assistant_write' and line_str:
+                try:
+                    data = json.loads(line_str)
+                    if 'content' in data:
+                        yield data['content']
+                except json.JSONDecodeError:
+                    # If not JSON, yield raw content
+                    yield line_str
+
+            # Stop on done event
+            if current_event == 'done':
+                break
+
+
+@cli.command()
+@click.option('--endpoint-id', required=True, help='ID of the chat endpoint.')
+@click.option('--interactive', '-i', is_flag=True, help='Start an interactive chat session.')
+@click.argument('message', required=False)
+@click.pass_obj
+def chat(api, endpoint_id, interactive, message):
+    """Chat with an AI assistant.
+
+    In single-question mode, provide a MESSAGE argument:
+        omnifact-cli chat --endpoint-id <id> "Your question here"
+
+    In interactive mode, use the -i flag:
+        omnifact-cli chat --endpoint-id <id> -i
+    """
+    try:
+        if interactive:
+            _run_interactive_chat(api, endpoint_id)
+        else:
+            if not message:
+                raise click.ClickException("Message is required in non-interactive mode. Use -i for interactive mode.")
+            _run_single_chat(api, endpoint_id, message)
+    except KeyboardInterrupt:
+        click.echo("\nChat ended.")
+    except Exception as e:
+        raise click.ClickException(str(e))
+
+
+def _run_single_chat(api, endpoint_id, message):
+    """Send a single message and print the response."""
+    response = api.chat(endpoint_id, message, stream=True)
+    for chunk in _process_stream_response(response):
+        click.echo(chunk, nl=False)
+    click.echo()  # Final newline
+
+
+def _run_interactive_chat(api, endpoint_id):
+    """Run an interactive chat session with conversation history."""
+    click.echo("Interactive chat started. Type 'exit' or 'quit' to end the session.")
+    click.echo("-" * 50)
+
+    history = []
+
+    while True:
+        try:
+            user_input = click.prompt("You", prompt_suffix=": ")
+        except click.exceptions.Abort:
+            break
+
+        if user_input.lower() in ('exit', 'quit'):
+            click.echo("Goodbye!")
+            break
+
+        if not user_input.strip():
+            continue
+
+        # Send message with history
+        click.echo("Assistant: ", nl=False)
+        response = api.chat(endpoint_id, user_input, history=history, stream=True)
+
+        # Collect the full response for history
+        full_response = []
+        for chunk in _process_stream_response(response):
+            click.echo(chunk, nl=False)
+            full_response.append(chunk)
+        click.echo()  # Newline after response
+
+        # Add to history
+        history.append({"role": "user", "content": user_input})
+        history.append({"role": "assistant", "content": "".join(full_response)})
+
+
 if __name__ == '__main__':
     cli()

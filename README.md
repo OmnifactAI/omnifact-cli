@@ -1,6 +1,6 @@
 # Omnifact CLI
 
-Omnifact CLI is a command-line interface tool for managing documents in the Omnifact platform.
+Omnifact CLI is a command-line interface tool for managing documents and chatting with AI assistants in the Omnifact platform.
 
 The Omnifact API Spec can be found [here](https://connect.omnifact.ai/docs). For more information on Omnifact, please visit [omnifact.ai](https://omnifact.ai).
 
@@ -99,6 +99,20 @@ omnifact-cli purge --space-id YOUR_SPACE_ID
 ```
 
 Note: The purge command will ask for confirmation before deleting all documents.
+
+8. Chat with an AI assistant (single question):
+
+```
+omnifact-cli chat --endpoint-id YOUR_ENDPOINT_ID "What is clean code?"
+```
+
+9. Chat with an AI assistant (interactive mode):
+
+```
+omnifact-cli chat --endpoint-id YOUR_ENDPOINT_ID -i
+```
+
+Interactive mode starts a conversation where you can chat back and forth with the assistant. The conversation history is maintained throughout the session. Type `exit` or `quit` to end the session.
 
 For more information on available commands, use:
 

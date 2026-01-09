@@ -184,3 +184,75 @@ def test_update_document_http_error(api):
 
         with pytest.raises(requests.exceptions.HTTPError):
             api.update_document("doc1", "new-name.pdf")
+
+
+def test_chat_streaming(api):
+    """Test chat method with streaming enabled."""
+    with patch('requests.Session.post') as mock_post:
+        mock_response = Mock()
+        mock_response.raise_for_status.return_value = None
+        mock_post.return_value = mock_response
+
+        result = api.chat("endpoint1", "Hello", stream=True)
+
+        assert result == mock_response
+        mock_post.assert_called_once_with(
+            "https://connect.omnifact.ai/v1/endpoints/endpoint1/chat",
+            json={"messages": [{"role": "user", "content": "Hello"}], "streaming": True},
+            stream=True
+        )
+
+
+def test_chat_non_streaming(api):
+    """Test chat method with streaming disabled."""
+    with patch('requests.Session.post') as mock_post:
+        mock_response = Mock()
+        mock_response.json.return_value = {"message": "Hello there!"}
+        mock_response.raise_for_status.return_value = None
+        mock_post.return_value = mock_response
+
+        result = api.chat("endpoint1", "Hello", stream=False)
+
+        assert result == {"message": "Hello there!"}
+        mock_post.assert_called_once_with(
+            "https://connect.omnifact.ai/v1/endpoints/endpoint1/chat",
+            json={"messages": [{"role": "user", "content": "Hello"}], "streaming": False},
+            stream=False
+        )
+
+
+def test_chat_with_history(api):
+    """Test chat method with conversation history."""
+    with patch('requests.Session.post') as mock_post:
+        mock_response = Mock()
+        mock_response.raise_for_status.return_value = None
+        mock_post.return_value = mock_response
+
+        history = [
+            {"role": "user", "content": "Hi"},
+            {"role": "assistant", "content": "Hello!"}
+        ]
+        api.chat("endpoint1", "How are you?", history=history, stream=True)
+
+        expected_messages = [
+            {"role": "user", "content": "Hi"},
+            {"role": "assistant", "content": "Hello!"},
+            {"role": "user", "content": "How are you?"}
+        ]
+        mock_post.assert_called_once_with(
+            "https://connect.omnifact.ai/v1/endpoints/endpoint1/chat",
+            json={"messages": expected_messages, "streaming": True},
+            stream=True
+        )
+
+
+def test_chat_http_error(api):
+    """Test chat handles HTTP errors properly."""
+    with patch('requests.Session.post') as mock_post:
+        mock_response = Mock()
+        mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError("400 Bad Request")
+        mock_response.text = '{"error": "Invalid message"}'
+        mock_post.return_value = mock_response
+
+        with pytest.raises(requests.exceptions.HTTPError):
+            api.chat("endpoint1", "Hello")
